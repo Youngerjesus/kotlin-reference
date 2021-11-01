@@ -145,5 +145,84 @@
 - 자바에서 Generic 은 일반적으로 Invariant 이다. 그래서 타입이 완전 똑같지 않다면 대입하는게 불가능하고 유연함을 제공하기 위해서는 Unbounded Wildcard 를 이용해야한다.
 - 하지만 코틀린에서는 클래스나 인터페이스를 선언할 때 out, in 을 통해서 제네릭에 variant 를 제공해주는게 가능하다.
 
+***
+
+## Type projections
+
+### Use-site variance: type projections
+
+> It is very easy to declare a type parameter T as out and avoid trouble with subtyping on the use site, but some classes can't actually be restricted to only return T 's! A good example of this is Array:
+>
+> ````kotlin
+> class Array<T>(val size: Int) {
+>     operator fun get(index: Int): T { ... }
+>     operator fun set(index: Int, value: T) { ... }
+> }
+> ````
+> 
+> This class can be neither co- nor contravariant in T. And this imposes certain inflexibilities. Consider the following function:
+>
+> ````kotlin
+> fun copy(from: Array<Any>, to: Array<Any>) {
+>     assert(from.size == to.size)
+>     for (i in from.indices)
+>         to[i] = from[i]
+> }
+> ````
+> 
+> This function is supposed to copy items from one array to another. Let's try to apply it in practice:
+>
+> ````kotlin
+> val ints: Array<Int> = arrayOf(1, 2, 3)
+> val any = Array<Any>(3) { "" }
+> copy(ints, any)
+> //   ^ type is Array<Int> but Array<Any> was expected
+> ````
+> 
+> Here you run into the same familiar problem: Array<T> is invariant in T, and so neither Array<Int> nor Array<Any> is a subtype of the other. Why not? Again, this is because copy could have an unexpected behavior, for example, it may attempt to write a String to from, and if you actually pass an array of Int there, a ClassCastException will be thrown later.
+>
+> To prohibit the copy function from writing to from, you can do the following:
+>
+> ````kotlin
+> fun copy(from: Array<out Any>, to: Array<Any>) { ... }
+> ````
+> 
+> This is type projection, which means that from is not a simple array, but is rather a restricted (projected) one. You can only call methods that return the type parameter T, which in this case means that you can only call get(). This is our approach to use-site variance, and it corresponds to Java's Array<? extends Object> while being slightly simpler.
+>
+> You can project a type with in as well:
+>
+> ````kotlin
+> fun fill(dest: Array<in String>, value: String) { ... }
+> ````
+> 
+> Array<in String> corresponds to Java's Array<? super String>. This means that you can pass an array of CharSequence or an array of Object to the fill() function.
+
+- Type Parameter `out` 을 클래스 선언부에서만 쓰는 것으로는 공변을 주기에는 한계가 있다.
+  - 메소드에서 파라미터로 공변성을 줘야하는 경우가 있다. `fun copy(from: Array<out Any>, to: Array<Any>) { ... }`
+
+***
+
+## Star-projections
+
+> Sometimes you want to say that you know nothing about the type argument, but you still want to use it in a safe way. The safe way here is to define such a projection of the generic type, that every concrete instantiation of that generic type will be a subtype of that projection.
+>
+> Kotlin provides so-called star-projection syntax for this:
+>
+> - For Foo<out T : TUpper>, where T is a covariant type parameter with the upper bound TUpper, Foo<*> is equivalent to Foo<out TUpper>. This means that when the T is unknown you can safely read values of TUpper from Foo<*>.
+> - For Foo<in T>, where T is a contravariant type parameter, Foo<*> is equivalent to Foo<in Nothing>. This means there is nothing you can write to Foo<*> in a safe way when T is unknown.
+> - For Foo<T : TUpper>, where T is an invariant type parameter with the upper bound TUpper, Foo<*> is equivalent to Foo<out TUpper> for reading values and to Foo<in Nothing> for writing values.
+>
+> If a generic type has several type parameters, each of them can be projected independently. For example, if the type is declared as interface Function<in T, out U> you could use the following star-projections:
+> 
+> - Function<*, String> means Function<in Nothing, String>.
+> - Function<Int, *> means Function<Int, out Any?>.
+> - Function<*, *> means Function<in Nothing, out Any?>.
+
+*** 
+
+- Star Projection 은 이후에 어떤 타입이 올 지 몰라서 결정해놓는 방법이다.
+- 헷갈릴 수 있는데 이는 Any 라는 코틀린 최상위 타입의 객체와는 다르다. 물론 구체적인 타입이 정해지기 전까지는 Any? 로 취급될 수는 있다.
+- 근데 한번 호출해서 정해지는 순간에는 범위에 맞지않는 타입이 들어올 경우 Syntax Error 가 난다. 
+
 
 

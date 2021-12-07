@@ -12,3 +12,4 @@ Kotlin Reference 를 읽으면서 정리한 레파지토리 입니다.
 - [Exceptions](references/exceptions.md)
 - [Pair](references/pair.md)
 - [Filtering collections](references/filtering_colleciton.md)
+- [List-specific operations](references/lists_specific_operations.md)

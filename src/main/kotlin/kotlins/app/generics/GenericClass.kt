@@ -27,4 +27,5 @@ fun demo(x: Comparable<Number>) {
 fun main() {
     val a = GenericClass<Parent>()
     val b: GenericClass<Child> = a
+    String.CASE_INSENSITIVE_ORDER
 }

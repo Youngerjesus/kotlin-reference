@@ -25,7 +25,7 @@ fun demo(x: Comparable<Number>) {
 }
 
 fun main() {
-    val a = GenericClass<Parent>()
-    val b: GenericClass<Child> = a
-    String.CASE_INSENSITIVE_ORDER
+    val numbersMap = mapOf("one" to 1, "two" to 2, "three" to 3)
+    println(numbersMap - "one")
+    println(numbersMap - listOf("two", "four"))
 }
